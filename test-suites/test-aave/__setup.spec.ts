@@ -95,7 +95,7 @@ const deployAllMockTokens = async (deployer: Signer) => {
   return tokens;
 };
 
-export const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
+const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   console.time('setup');
   const aaveAdmin = await deployer.getAddress();
   const config = loadPoolConfig(ConfigNames.Aave);

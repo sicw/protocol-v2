@@ -33,22 +33,6 @@ makeSuite('LendingPool FlashLoan function', (testEnv: TestEnv) => {
   } = ProtocolErrors;
 
   before(async () => {
-    // await rawBRE.run('set-DRE');
-    // const [deployer, secondaryWallet] = await getEthersSigners();
-    // const FORK = process.env.FORK;
-    //
-    // if (FORK) {
-    //   // await rawBRE.run('aave:mainnet', { skipRegistry: true });
-    // } else {
-    //   console.log('-> Deploying test environment...');
-    //   await buildTestEnv(deployer, secondaryWallet);
-    // }
-
-    // await initializeMakeSuite();
-    // console.log('\n***************');
-    // console.log('Setup and snapshot finished');
-    // console.log('***************\n');
-
     _mockFlashLoanReceiver = await getMockFlashLoanReceiver();
   });
 

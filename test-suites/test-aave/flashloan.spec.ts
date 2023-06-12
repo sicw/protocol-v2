@@ -17,8 +17,7 @@ import {
   getStableDebtToken,
   getVariableDebtToken,
 } from '../../helpers/contracts-getters';
-import rawBRE from 'hardhat';
-import { buildTestEnv } from './__setup.spec';
+import './__setup.spec.ts';
 
 const { expect } = require('chai');
 
@@ -34,21 +33,21 @@ makeSuite('LendingPool FlashLoan function', (testEnv: TestEnv) => {
   } = ProtocolErrors;
 
   before(async () => {
-    await rawBRE.run('set-DRE');
-    const [deployer, secondaryWallet] = await getEthersSigners();
-    const FORK = process.env.FORK;
+    // await rawBRE.run('set-DRE');
+    // const [deployer, secondaryWallet] = await getEthersSigners();
+    // const FORK = process.env.FORK;
+    //
+    // if (FORK) {
+    //   // await rawBRE.run('aave:mainnet', { skipRegistry: true });
+    // } else {
+    //   console.log('-> Deploying test environment...');
+    //   await buildTestEnv(deployer, secondaryWallet);
+    // }
 
-    if (FORK) {
-      await rawBRE.run('aave:mainnet', { skipRegistry: true });
-    } else {
-      console.log('-> Deploying test environment...');
-      await buildTestEnv(deployer, secondaryWallet);
-    }
-
-    await initializeMakeSuite();
-    console.log('\n***************');
-    console.log('Setup and snapshot finished');
-    console.log('***************\n');
+    // await initializeMakeSuite();
+    // console.log('\n***************');
+    // console.log('Setup and snapshot finished');
+    // console.log('***************\n');
 
     _mockFlashLoanReceiver = await getMockFlashLoanReceiver();
   });

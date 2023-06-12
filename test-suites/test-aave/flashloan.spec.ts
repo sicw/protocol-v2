@@ -2,11 +2,7 @@ import BigNumber from 'bignumber.js';
 
 import { TestEnv, makeSuite, initializeMakeSuite } from './helpers/make-suite';
 import { APPROVAL_AMOUNT_LENDING_POOL, oneRay } from '../../helpers/constants';
-import {
-  convertToCurrencyDecimals,
-  getContract,
-  getEthersSigners,
-} from '../../helpers/contracts-helpers';
+import { convertToCurrencyDecimals, getContract } from '../../helpers/contracts-helpers';
 import { ethers } from 'ethers';
 import { MockFlashLoanReceiver } from '../../types/MockFlashLoanReceiver';
 import { ProtocolErrors, eContractid } from '../../helpers/types';

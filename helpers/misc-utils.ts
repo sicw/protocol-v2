@@ -19,7 +19,6 @@ export const stringToBigNumber = (amount: string): BigNumber => new BigNumber(am
 
 export const getDb = () => low(new FileSync('./deployed-contracts.json'));
 
-// 之前使用的是Buidler V2版本迁移至hardhat框架
 export let DRE: HardhatRuntimeEnvironment | BuidlerRuntimeEnvironment;
 
 export const setDRE = (_DRE: HardhatRuntimeEnvironment | BuidlerRuntimeEnvironment) => {

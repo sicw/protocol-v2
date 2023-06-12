@@ -1,4 +1,4 @@
-import { evmRevert, evmSnapshot, DRE } from '../../../helpers/misc-utils';
+import { evmRevert, evmSnapshot, DRE, setDRE } from '../../../helpers/misc-utils';
 import { Signer } from 'ethers';
 import {
   getLendingPool,
@@ -42,6 +42,7 @@ import { AaveConfig } from '../../../markets/aave';
 import { FlashLiquidationAdapter } from '../../../types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { usingTenderly } from '../../../helpers/tenderly-utils';
+import rawBRE from 'hardhat';
 
 chai.use(bignumberChai());
 chai.use(almostEqual());
@@ -187,6 +188,8 @@ const revertHead = async () => {
 export function makeSuite(name: string, tests: (testEnv: TestEnv) => void) {
   describe(name, () => {
     before(async () => {
+      // await rawBRE.run('set-DRE');
+      // await initializeMakeSuite();
       await setSnapshot();
     });
     tests(testEnv);

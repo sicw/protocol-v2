@@ -1,8 +1,12 @@
 import BigNumber from 'bignumber.js';
 
-import { TestEnv, makeSuite } from './helpers/make-suite';
+import { TestEnv, makeSuite, initializeMakeSuite } from './helpers/make-suite';
 import { APPROVAL_AMOUNT_LENDING_POOL, oneRay } from '../../helpers/constants';
-import { convertToCurrencyDecimals, getContract } from '../../helpers/contracts-helpers';
+import {
+  convertToCurrencyDecimals,
+  getContract,
+  getEthersSigners,
+} from '../../helpers/contracts-helpers';
 import { ethers } from 'ethers';
 import { MockFlashLoanReceiver } from '../../types/MockFlashLoanReceiver';
 import { ProtocolErrors, eContractid } from '../../helpers/types';
@@ -13,6 +17,8 @@ import {
   getStableDebtToken,
   getVariableDebtToken,
 } from '../../helpers/contracts-getters';
+import rawBRE from 'hardhat';
+import { buildTestEnv } from './__setup.spec';
 
 const { expect } = require('chai');
 
@@ -28,6 +34,22 @@ makeSuite('LendingPool FlashLoan function', (testEnv: TestEnv) => {
   } = ProtocolErrors;
 
   before(async () => {
+    await rawBRE.run('set-DRE');
+    const [deployer, secondaryWallet] = await getEthersSigners();
+    const FORK = process.env.FORK;
+
+    if (FORK) {
+      await rawBRE.run('aave:mainnet', { skipRegistry: true });
+    } else {
+      console.log('-> Deploying test environment...');
+      await buildTestEnv(deployer, secondaryWallet);
+    }
+
+    await initializeMakeSuite();
+    console.log('\n***************');
+    console.log('Setup and snapshot finished');
+    console.log('***************\n');
+
     _mockFlashLoanReceiver = await getMockFlashLoanReceiver();
   });
 

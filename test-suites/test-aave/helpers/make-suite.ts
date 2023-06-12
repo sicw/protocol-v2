@@ -188,8 +188,6 @@ const revertHead = async () => {
 export function makeSuite(name: string, tests: (testEnv: TestEnv) => void) {
   describe(name, () => {
     before(async () => {
-      // await rawBRE.run('set-DRE');
-      // await initializeMakeSuite();
       await setSnapshot();
     });
     tests(testEnv);

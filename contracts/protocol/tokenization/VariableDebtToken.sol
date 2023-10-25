@@ -102,6 +102,7 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
       _decreaseBorrowAllowance(onBehalfOf, user, amount);
     }
 
+    // 按照缩放逻辑计算
     uint256 previousBalance = super.balanceOf(onBehalfOf);
     uint256 amountScaled = amount.rayDiv(index);
     require(amountScaled != 0, Errors.CT_INVALID_MINT_AMOUNT);
@@ -121,11 +122,7 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
    * @param amount The amount getting burned
    * @param index The variable debt index of the reserve
    **/
-  function burn(
-    address user,
-    uint256 amount,
-    uint256 index
-  ) external override onlyLendingPool {
+  function burn(address user, uint256 amount, uint256 index) external override onlyLendingPool {
     uint256 amountScaled = amount.rayDiv(index);
     require(amountScaled != 0, Errors.CT_INVALID_BURN_AMOUNT);
 
@@ -165,12 +162,9 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
    * @return The principal balance of the user
    * @return The principal total supply
    **/
-  function getScaledUserBalanceAndSupply(address user)
-    external
-    view
-    override
-    returns (uint256, uint256)
-  {
+  function getScaledUserBalanceAndSupply(
+    address user
+  ) external view override returns (uint256, uint256) {
     return (super.balanceOf(user), super.totalSupply());
   }
 

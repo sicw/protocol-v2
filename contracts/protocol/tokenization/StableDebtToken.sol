@@ -109,8 +109,12 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
     if (accountBalance == 0) {
       return 0;
     }
-    uint256 cumulatedInterest =
-      MathUtils.calculateCompoundedInterest(stableRate, _timestamps[account]);
+    // 计算稳定利率t1~t2的增益倍数
+    uint256 cumulatedInterest = MathUtils.calculateCompoundedInterest(
+      stableRate,
+      _timestamps[account]
+    );
+    // 增益倍数 * 本金 = 当前贷款数量
     return accountBalance.rayMul(cumulatedInterest);
   }
 
@@ -153,17 +157,23 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
 
     vars.amountInRay = amount.wadToRay();
 
+    // 本次产生的利息不计算在内(这个利息要以下次利率开始记息)
+    // 个人总贷款利息(利率*数量) / 个人总贷款
     vars.newStableRate = _usersStableRate[onBehalfOf]
       .rayMul(currentBalance.wadToRay())
       .add(vars.amountInRay.rayMul(rate))
       .rayDiv(currentBalance.add(amount).wadToRay());
 
     require(vars.newStableRate <= type(uint128).max, Errors.SDT_STABLE_DEBT_OVERFLOW);
+    // 用户的稳定贷款利率
     _usersStableRate[onBehalfOf] = vars.newStableRate;
 
     //solium-disable-next-line
     _totalSupplyTimestamp = _timestamps[onBehalfOf] = uint40(block.timestamp);
 
+    // 资金池的稳定贷款利率
+    // 本次产生的利息不计算在内
+    // 直接池总贷款利息 / 总贷款
     // Calculates the updated average stable rate
     vars.currentAvgStableRate = _avgStableRate = vars
       .currentAvgStableRate
@@ -171,6 +181,7 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
       .add(rate.rayMul(vars.amountInRay))
       .rayDiv(vars.nextSupply.wadToRay());
 
+    // 本次要贷款的数量 + 之前贷款产生的利息
     _mint(onBehalfOf, amount.add(balanceIncrease), vars.previousSupply);
 
     emit Transfer(address(0), onBehalfOf, amount);
@@ -261,15 +272,9 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
    * @param user The address of the user for which the interest is being accumulated
    * @return The previous principal balance, the new principal balance and the balance increase
    **/
-  function _calculateBalanceIncrease(address user)
-    internal
-    view
-    returns (
-      uint256,
-      uint256,
-      uint256
-    )
-  {
+  function _calculateBalanceIncrease(
+    address user
+  ) internal view returns (uint256, uint256, uint256) {
     uint256 previousPrincipalBalance = super.balanceOf(user);
 
     if (previousPrincipalBalance == 0) {
@@ -289,17 +294,7 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
   /**
    * @dev Returns the principal and total supply, the average borrow rate and the last supply update timestamp
    **/
-  function getSupplyData()
-    public
-    view
-    override
-    returns (
-      uint256,
-      uint256,
-      uint256,
-      uint40
-    )
-  {
+  function getSupplyData() public view override returns (uint256, uint256, uint256, uint40) {
     uint256 avgRate = _avgStableRate;
     return (super.totalSupply(), _calcTotalSupply(avgRate), avgRate, _totalSupplyTimestamp);
   }
@@ -389,8 +384,10 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
       return 0;
     }
 
-    uint256 cumulatedInterest =
-      MathUtils.calculateCompoundedInterest(avgRate, _totalSupplyTimestamp);
+    uint256 cumulatedInterest = MathUtils.calculateCompoundedInterest(
+      avgRate,
+      _totalSupplyTimestamp
+    );
 
     return principalSupply.rayMul(cumulatedInterest);
   }
@@ -401,11 +398,7 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
    * @param amount The amount being minted
    * @param oldTotalSupply the total supply before the minting event
    **/
-  function _mint(
-    address account,
-    uint256 amount,
-    uint256 oldTotalSupply
-  ) internal {
+  function _mint(address account, uint256 amount, uint256 oldTotalSupply) internal {
     uint256 oldAccountBalance = _balances[account];
     _balances[account] = oldAccountBalance.add(amount);
 
@@ -420,11 +413,7 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
    * @param amount The amount being burned
    * @param oldTotalSupply The total supply before the burning event
    **/
-  function _burn(
-    address account,
-    uint256 amount,
-    uint256 oldTotalSupply
-  ) internal {
+  function _burn(address account, uint256 amount, uint256 oldTotalSupply) internal {
     uint256 oldAccountBalance = _balances[account];
     _balances[account] = oldAccountBalance.sub(amount, Errors.SDT_BURN_EXCEEDS_BALANCE);
 

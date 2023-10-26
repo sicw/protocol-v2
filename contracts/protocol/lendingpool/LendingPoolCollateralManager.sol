@@ -85,7 +85,9 @@ contract LendingPoolCollateralManager is
     uint256 debtToCover, // 给贷款人还多少款
     bool receiveAToken // 是否要aToken
   ) external override returns (uint256, string memory) {
+    // 抵押资产
     DataTypes.ReserveData storage collateralReserve = _reserves[collateralAsset];
+    // 贷款资产
     DataTypes.ReserveData storage debtReserve = _reserves[debtAsset];
     DataTypes.UserConfigurationMap storage userConfig = _usersConfig[user];
 
@@ -100,6 +102,7 @@ contract LendingPoolCollateralManager is
       _addressesProvider.getPriceOracle()
     );
 
+    // 稳定利率贷款、可变利率贷款数额
     (vars.userStableDebt, vars.userVariableDebt) = Helpers.getUserCurrentDebt(user, debtReserve);
 
     (vars.errorCode, vars.errorMsg) = ValidationLogic.validateLiquidationCall(
@@ -117,13 +120,15 @@ contract LendingPoolCollateralManager is
 
     vars.collateralAtoken = IAToken(collateralReserve.aTokenAddress);
 
-    // 用户抵押数量
+    // 贷款人抵押资产的数额
     vars.userCollateralBalance = vars.collateralAtoken.balanceOf(user);
 
+    // 针对贷款人的贷款数额 最大可清算贷款数额
     vars.maxLiquidatableDebt = vars.userStableDebt.add(vars.userVariableDebt).percentMul(
       LIQUIDATION_CLOSE_FACTOR_PERCENT
     );
 
+    // 实际清算数额
     vars.actualDebtToLiquidate = debtToCover > vars.maxLiquidatableDebt
       ? vars.maxLiquidatableDebt
       : debtToCover;
@@ -167,7 +172,6 @@ contract LendingPoolCollateralManager is
     // 清除贷款人的贷款数额
     // 可变利率贷款数额 >= 真正要被清算的贷款数额
     if (vars.userVariableDebt >= vars.actualDebtToLiquidate) {
-      // burn掉可变利率贷款
       IVariableDebtToken(debtReserve.variableDebtTokenAddress).burn(
         user,
         vars.actualDebtToLiquidate,
@@ -175,13 +179,16 @@ contract LendingPoolCollateralManager is
       );
     } else {
       // If the user doesn't have variable debt, no need to try to burn variable debt tokens
+      // 可变利率贷款数额 < 真正要被清算的贷款数额
       if (vars.userVariableDebt > 0) {
         IVariableDebtToken(debtReserve.variableDebtTokenAddress).burn(
           user,
+          // 把可变贷款都清掉
           vars.userVariableDebt,
           debtReserve.variableBorrowIndex
         );
       }
+      // 再还稳定利率贷款
       IStableDebtToken(debtReserve.stableDebtTokenAddress).burn(
         user,
         vars.actualDebtToLiquidate.sub(vars.userVariableDebt)
@@ -198,7 +205,7 @@ contract LendingPoolCollateralManager is
     if (receiveAToken) {
       // 清算人在抵押资产中的余额
       vars.liquidatorPreviousATokenBalance = IERC20(vars.collateralAtoken).balanceOf(msg.sender);
-      // 抵押品的aToken, 转给清算人
+      // 抵押品的aToken, 转给清算人(房子转给清算人)
       vars.collateralAtoken.transferOnLiquidation(user, msg.sender, vars.maxCollateralToLiquidate);
 
       if (vars.liquidatorPreviousATokenBalance == 0) {
@@ -216,7 +223,7 @@ contract LendingPoolCollateralManager is
       );
 
       // Burn the equivalent amount of aToken, sending the underlying to the liquidator
-      // 不接收aToken, 发送标地资产给清算人
+      // 不接收aToken, 发送标地资产给清算人(房子转给清算人)
       vars.collateralAtoken.burn(
         user,
         msg.sender,
@@ -233,7 +240,7 @@ contract LendingPoolCollateralManager is
     }
 
     // Transfers the debt asset being repaid to the aToken, where the liquidity is kept
-    // 清算人归还之前的贷款
+    // 清算人归还之前贷款人的贷款
     IERC20(debtAsset).safeTransferFrom(
       msg.sender,
       debtReserve.aTokenAddress,

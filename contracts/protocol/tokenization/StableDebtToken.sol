@@ -20,9 +20,15 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
 
   uint256 public constant DEBT_TOKEN_REVISION = 0x1;
 
+  // 资金池的稳定利率平均值
   uint256 internal _avgStableRate;
+
+  // 记录用户贷款时间戳
   mapping(address => uint40) internal _timestamps;
+
+  // 记录用户的稳定利率
   mapping(address => uint256) internal _usersStableRate;
+
   uint40 internal _totalSupplyTimestamp;
 
   ILendingPool internal _pool;
@@ -159,6 +165,7 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
 
     // 本次产生的利息不计算在内(这个利息要以下次利率开始记息)
     // 个人总贷款利息(利率*数量) / 个人总贷款
+    // 按照权重计算的平均值
     vars.newStableRate = _usersStableRate[onBehalfOf]
       .rayMul(currentBalance.wadToRay())
       .add(vars.amountInRay.rayMul(rate))

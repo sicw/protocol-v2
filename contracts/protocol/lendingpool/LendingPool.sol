@@ -867,6 +867,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
     bool isFirstBorrowing = false;
     if (DataTypes.InterestRateMode(vars.interestRateMode) == DataTypes.InterestRateMode.STABLE) {
       // 当前时刻资金池中稳定利率是按照上次block update后计算的, 所以贷款时也是按照这个
+      // 或者考虑的是防价格攻击
       currentStableRate = reserve.currentStableBorrowRate;
 
       isFirstBorrowing = IStableDebtToken(reserve.stableDebtTokenAddress).mint(

@@ -79,11 +79,11 @@ contract LendingPoolCollateralManager is
    * to receive the underlying collateral asset directly
    **/
   function liquidationCall(
-    address collateralAsset,
-    address debtAsset,
-    address user,
-    uint256 debtToCover,
-    bool receiveAToken
+    address collateralAsset, // 抵押的资产地址
+    address debtAsset, // 贷款地址
+    address user, // 被清算人地址
+    uint256 debtToCover, // 给贷款人还多少款
+    bool receiveAToken // 是否要aToken
   ) external override returns (uint256, string memory) {
     DataTypes.ReserveData storage collateralReserve = _reserves[collateralAsset];
     DataTypes.ReserveData storage debtReserve = _reserves[debtAsset];
@@ -117,6 +117,7 @@ contract LendingPoolCollateralManager is
 
     vars.collateralAtoken = IAToken(collateralReserve.aTokenAddress);
 
+    // 用户抵押数量
     vars.userCollateralBalance = vars.collateralAtoken.balanceOf(user);
 
     vars.maxLiquidatableDebt = vars.userStableDebt.add(vars.userVariableDebt).percentMul(
@@ -150,8 +151,9 @@ contract LendingPoolCollateralManager is
     // If the liquidator reclaims the underlying asset, we make sure there is enough available liquidity in the
     // collateral reserve
     if (!receiveAToken) {
-      uint256 currentAvailableCollateral =
-        IERC20(collateralAsset).balanceOf(address(vars.collateralAtoken));
+      uint256 currentAvailableCollateral = IERC20(collateralAsset).balanceOf(
+        address(vars.collateralAtoken)
+      );
       if (currentAvailableCollateral < vars.maxCollateralToLiquidate) {
         return (
           uint256(Errors.CollateralManagerErrors.NOT_ENOUGH_LIQUIDITY),
@@ -162,7 +164,10 @@ contract LendingPoolCollateralManager is
 
     debtReserve.updateState();
 
+    // 清除贷款人的贷款数额
+    // 可变利率贷款数额 >= 真正要被清算的贷款数额
     if (vars.userVariableDebt >= vars.actualDebtToLiquidate) {
+      // burn掉可变利率贷款
       IVariableDebtToken(debtReserve.variableDebtTokenAddress).burn(
         user,
         vars.actualDebtToLiquidate,
@@ -191,7 +196,9 @@ contract LendingPoolCollateralManager is
     );
 
     if (receiveAToken) {
+      // 清算人在抵押资产中的余额
       vars.liquidatorPreviousATokenBalance = IERC20(vars.collateralAtoken).balanceOf(msg.sender);
+      // 抵押品的aToken, 转给清算人
       vars.collateralAtoken.transferOnLiquidation(user, msg.sender, vars.maxCollateralToLiquidate);
 
       if (vars.liquidatorPreviousATokenBalance == 0) {
@@ -209,6 +216,7 @@ contract LendingPoolCollateralManager is
       );
 
       // Burn the equivalent amount of aToken, sending the underlying to the liquidator
+      // 不接收aToken, 发送标地资产给清算人
       vars.collateralAtoken.burn(
         user,
         msg.sender,
@@ -225,6 +233,7 @@ contract LendingPoolCollateralManager is
     }
 
     // Transfers the debt asset being repaid to the aToken, where the liquidity is kept
+    // 清算人归还之前的贷款
     IERC20(debtAsset).safeTransferFrom(
       msg.sender,
       debtReserve.aTokenAddress,
@@ -296,17 +305,17 @@ contract LendingPoolCollateralManager is
     vars.maxAmountCollateralToLiquidate = vars
       .debtAssetPrice
       .mul(debtToCover)
-      .mul(10**vars.collateralDecimals)
+      .mul(10 ** vars.collateralDecimals)
       .percentMul(vars.liquidationBonus)
-      .div(vars.collateralPrice.mul(10**vars.debtAssetDecimals));
+      .div(vars.collateralPrice.mul(10 ** vars.debtAssetDecimals));
 
     if (vars.maxAmountCollateralToLiquidate > userCollateralBalance) {
       collateralAmount = userCollateralBalance;
       debtAmountNeeded = vars
         .collateralPrice
         .mul(collateralAmount)
-        .mul(10**vars.debtAssetDecimals)
-        .div(vars.debtAssetPrice.mul(10**vars.collateralDecimals))
+        .mul(10 ** vars.debtAssetDecimals)
+        .div(vars.debtAssetPrice.mul(10 ** vars.collateralDecimals))
         .percentDiv(vars.liquidationBonus);
     } else {
       collateralAmount = vars.maxAmountCollateralToLiquidate;

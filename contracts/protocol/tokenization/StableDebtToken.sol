@@ -252,7 +252,9 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
     //solium-disable-next-line
     _totalSupplyTimestamp = uint40(block.timestamp);
 
+    // 贷款利息是否大于要归还的数量
     if (balanceIncrease > amount) {
+      // 优先还利息
       uint256 amountToMint = balanceIncrease.sub(amount);
       _mint(user, amountToMint, previousSupply);
       emit Mint(
@@ -266,6 +268,7 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
         nextSupply
       );
     } else {
+      // 优先还利息
       uint256 amountToBurn = amount.sub(balanceIncrease);
       _burn(user, amountToBurn, previousSupply);
       emit Burn(user, amountToBurn, currentBalance, balanceIncrease, newAvgStableRate, nextSupply);

@@ -281,6 +281,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
       _usersConfig[onBehalfOf].setBorrowing(reserve.id, false);
     }
 
+    // 归还资产(标地资产)
     IERC20(asset).safeTransferFrom(msg.sender, aToken, paybackAmount);
 
     IAToken(aToken).handleRepayment(msg.sender, paybackAmount);
@@ -293,11 +294,12 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
   /**
    * @dev Allows a borrower to swap his debt between stable and variable mode, or viceversa
    * @param asset The address of the underlying asset borrowed
-   * @param rateMode The rate mode that the user wants to swap to
+   * @param rateMode The rate mode that the user wants to swap to 这里是当前使用的贷款模式, 不是想要切换的
    **/
   function swapBorrowRateMode(address asset, uint256 rateMode) external override whenNotPaused {
     DataTypes.ReserveData storage reserve = _reserves[asset];
 
+    // 取的是balanceOf
     (uint256 stableDebt, uint256 variableDebt) = Helpers.getUserCurrentDebt(msg.sender, reserve);
 
     DataTypes.InterestRateMode interestRateMode = DataTypes.InterestRateMode(rateMode);
@@ -368,6 +370,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
     reserve.updateState();
 
     IStableDebtToken(address(stableDebtToken)).burn(user, stableDebt);
+    // 更新为当前稳定利率, 重新贷款给用户
     IStableDebtToken(address(stableDebtToken)).mint(
       user,
       user,
@@ -898,6 +901,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
     );
 
     if (vars.releaseUnderlying) {
+      // 给用户的是标地资产
       IAToken(vars.aTokenAddress).transferUnderlyingTo(vars.user, vars.amount);
     }
 

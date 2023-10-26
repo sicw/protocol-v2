@@ -495,19 +495,25 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
 
     ValidationLogic.validateFlashloan(assets, amounts);
 
+    // 要闪电贷款的aToken
     address[] memory aTokenAddresses = new address[](assets.length);
+    // 贷款的数量
     uint256[] memory premiums = new uint256[](assets.length);
 
+    // 接收贷款的地址
     vars.receiver = IFlashLoanReceiver(receiverAddress);
 
     for (vars.i = 0; vars.i < assets.length; vars.i++) {
       aTokenAddresses[vars.i] = _reserves[assets[vars.i]].aTokenAddress;
 
+      // 贷款费用
       premiums[vars.i] = amounts[vars.i].mul(_flashLoanPremiumTotal).div(10000);
 
+      // 给贷款人转账
       IAToken(aTokenAddresses[vars.i]).transferUnderlyingTo(receiverAddress, amounts[vars.i]);
     }
 
+    // 执行贷款后的逻辑
     require(
       vars.receiver.executeOperation(assets, amounts, premiums, msg.sender, params),
       Errors.LP_INVALID_FLASH_LOAN_EXECUTOR_RETURN
@@ -533,9 +539,11 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
           0
         );
 
+        // 将资产转回给资金池
         IERC20(vars.currentAsset).safeTransferFrom(
           receiverAddress,
           vars.currentATokenAddress,
+          // 归还贷款+利息
           vars.currentAmountPlusPremium
         );
       } else {
